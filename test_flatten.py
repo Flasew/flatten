@@ -3,6 +3,7 @@
 
 import unittest
 import json
+from six import assertCountEqual
 
 try:
     # python2
@@ -11,7 +12,7 @@ except ImportError:
     # python3
     from io import StringIO
 
-from flatten_json import flatten, unflatten, unflatten_list, cli
+from flatten_json import flatten, unflatten, unflatten_list, cli, flatten_keys
 from util import check_if_numbers_are_consecutive
 
 
@@ -43,6 +44,7 @@ class UnitTests(unittest.TestCase):
         expected = dic
         actual = flatten(dic)
         self.assertEqual(actual, expected)
+        assertCountEqual(self, flatten_keys(dic), list(actual.keys()))
 
     def test_one_flatten(self):
         dic = {'a': '1',
@@ -52,6 +54,7 @@ class UnitTests(unittest.TestCase):
         expected = {'a': '1', 'b': '2', 'c_c1': '3', 'c_c2': '4'}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
+        assertCountEqual(self, flatten_keys(dic), list(actual.keys()))
 
     def test_one_flatten_utf8(self):
         dic = {'a': '1',
@@ -61,6 +64,7 @@ class UnitTests(unittest.TestCase):
         expected = {'a': '1', u'ñ': u'áéö', 'c_c1': '3', 'c_c2': '4'}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
+        assertCountEqual(self, flatten_keys(dic), list(actual.keys()))
 
     def test_one_flatten_utf8_dif(self):
         a = {u'eñe': 1}
@@ -68,6 +72,7 @@ class UnitTests(unittest.TestCase):
         expected = {u'info_{}'.format(u'eñe'): 1}
         actual = flatten(info)
         self.assertEqual(actual, expected)
+        assertCountEqual(self, flatten_keys(info), list(actual.keys()))
 
     def test_custom_separator(self):
         dic = {'a': '1',
@@ -77,6 +82,7 @@ class UnitTests(unittest.TestCase):
         expected = {'a': '1', 'b': '2', 'c*c1': '3', 'c*c2': '4'}
         actual = flatten(dic, '*')
         self.assertEqual(actual, expected)
+        assertCountEqual(self, flatten_keys(dic, '*'), list(actual.keys()))
 
     def test_list(self):
         dic = {
@@ -86,6 +92,7 @@ class UnitTests(unittest.TestCase):
         expected = {'a': 1, 'b_0_c_0': 2, 'b_0_c_1': 3}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
+        assertCountEqual(self, flatten_keys(dic), list(actual.keys()))
 
     def test_list_and_dict(self):
         dic = {
@@ -97,6 +104,7 @@ class UnitTests(unittest.TestCase):
                     'c_0_e_0_f': 1, 'c_0_e_0_g': 2}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
+        assertCountEqual(self, flatten_keys(dic), list(actual.keys()))
 
     def test_empty_list_and_dict(self):
         dic = {
@@ -111,6 +119,7 @@ class UnitTests(unittest.TestCase):
                     'e_0_g_0_j': '', 'e_0_g_0_k': None}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
+        assertCountEqual(self, flatten_keys(dic), list(actual.keys()))
 
     def test_blog_example(self):
         dic = {
@@ -123,6 +132,7 @@ class UnitTests(unittest.TestCase):
                     'c_0_e_0_g': 2}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
+        assertCountEqual(self, flatten_keys(dic), list(actual.keys()))
 
     def test_unflatten_no_list(self):
         dic = {
