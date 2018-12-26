@@ -29,64 +29,6 @@ def _construct_key(previous_key, separator, new_key):
     else:
         return new_key
 
-def flatten_keys(nested_dict, separator="_"):
-    def _keys(object_, key):
-        if not object_:
-            return [key]
-        elif isinstance(object_, dict):
-            return list(chain(
-                *[_keys(object_[o_key], _construct_key(key, separator, o_key))
-                for o_key in object_]))
-        elif isinstance(object_, list) or isinstance(object_, set):
-            return list(chain(
-                *[_keys(item, _construct_key(key, separator, index))
-                for index, item in enumerate(object_)]))
-        else:
-            return [key]
-    # def _keys(object_, key):
-    #     if not object_:
-    #         return [key]
-    #     elif isinstance(object_, dict):
-    #         return sum(
-    #             [_keys(object_[o_key], _construct_key(key, separator, o_key)) 
-    #             for o_key in object_], [])
-    #     elif isinstance(object_, list) or isinstance(object_, set):
-    #         return sum(
-    #             [_keys(item, _construct_key(key, separator, index)) 
-    #             for index, item in enumerate(object_)], [])
-    #     else:
-    #         return [key]
-    # def _keys(object_, key):
-    #     s=set()
-    #     if not object_:
-    #         s.add(key)
-    #     elif isinstance(object_, dict):
-    #         for object_key in object_:
-    #             s.update(_keys(object_[object_key], _construct_key(key,
-    #                                                             separator,
-    #                                                             object_key)))
-    #     elif isinstance(object_, list) or isinstance(object_, set):
-    #         for index, item in enumerate(object_):
-    #             s.update(_keys(item, _construct_key(key, separator, index)))
-    #     else:
-    #         s.add(key)
-    #     return s
-    # def _keys(object_, key):
-    #     ls=[]
-    #     if not object_:
-    #         ls.extend([key])
-    #     elif isinstance(object_, dict):
-    #         for object_key in object_:
-    #             ls.extend(_keys(object_[object_key], _construct_key(key,
-    #                                                             separator,
-    #                                                             object_key)))
-    #     elif isinstance(object_, list) or isinstance(object_, set):
-    #         for index, item in enumerate(object_):
-    #             ls.extend(_keys(item, _construct_key(key, separator, index)))
-    #     else:
-    #         ls.extend([key])
-    #     return ls
-    return _keys(nested_dict, None)
 
 def flatten(nested_dict, separator="_", root_keys_to_ignore=set()):
     """
@@ -136,6 +78,23 @@ def flatten(nested_dict, separator="_", root_keys_to_ignore=set()):
 
     _flatten(nested_dict, None)
     return flattened_dict
+
+
+def flatten_keys(nested_dict, separator="_"):
+    def _keys(object_, key):
+        if not object_:
+            return {key}
+        elif isinstance(object_, dict):
+            return set(chain(
+                *[_keys(object_[o_key], _construct_key(key, separator, o_key))
+                for o_key in object_]))
+        elif isinstance(object_, list) or isinstance(object_, set):
+            return set(chain(
+                *[_keys(item, _construct_key(key, separator, index))
+                for index, item in enumerate(object_)]))
+        else:
+            return {key}
+    return _keys(nested_dict, None)
 
 
 flatten_json = flatten
