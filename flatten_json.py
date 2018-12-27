@@ -30,7 +30,8 @@ def _construct_key(previous_key, separator, new_key):
         return new_key
 
 
-def flatten(nested_dict, separator="_", root_keys_to_ignore=set()):
+def flatten(nested_dict, separator="_", keys_to_ignore=None,
+            keys_to_keep=None, filter_func=None):
     """
     Flattens a dictionary with nested structure to a dictionary with no
     hierarchy
@@ -40,15 +41,29 @@ def flatten(nested_dict, separator="_", root_keys_to_ignore=set()):
 
     :param nested_dict: dictionary we want to flatten
     :param separator: string to separate dictionary keys by
-    :param root_keys_to_ignore: set of root keys to ignore from flattening
+    :param root_keys_to_ignore: deprecated
+    :param keys_to_ignore: set of keys to ignore during flattening
+    :param keys_to_keep: set of keys to keep during flattening
+    :param filter_func: only keep keys for this function returns True
     :return: flattened dictionary
     """
     assert isinstance(nested_dict, dict), "flatten requires a dictionary input"
     assert isinstance(separator, six.string_types), "separator must be string"
+    n_kws = count_not_none(keys_to_ignore, keys_to_keep, filter_func)
+    assert n_kws <= 1, "Arguments `keys_to_ignore`, `keys_to_keep`, or " \
+                       "`filter_func` are mutually exclusive"
 
     # This global dictionary stores the flattened keys and values and is
     # ultimately returned
     flattened_dict = dict()
+    if keys_to_ignore is not None:
+        assert isinstance(keys_to_ignore, set)
+        filter_func = lambda x: False if x in keys_to_ignore else True
+    elif keys_to_keep is not None:
+        assert isinstance(keys_to_keep, set)
+        filter_func = lambda x: True if x in keys_to_keep else False
+    if filter_func is None:
+        filter_func = lambda x: True
 
     def _flatten(object_, key):
         """
@@ -61,19 +76,21 @@ def flatten(nested_dict, separator="_", root_keys_to_ignore=set()):
         """
         # Empty object can't be iterated, take as is
         if not object_:
-            flattened_dict[key] = object_
+            if not object_ and filter_func(key):
+                flattened_dict[key] = object_
         # These object types support iteration
         elif isinstance(object_, dict):
             for object_key in object_:
-                if not (not key and object_key in root_keys_to_ignore):
-                    _flatten(object_[object_key], _construct_key(key,
-                                                                 separator,
-                                                                 object_key))
+                _flatten(object_[object_key], _construct_key(key,
+                                                             separator,
+                                                             object_key))
         elif isinstance(object_, list) or isinstance(object_, set):
             for index, item in enumerate(object_):
                 _flatten(item, _construct_key(key, separator, index))
+            for index, item in enumerate(object_):
+                _flatten(item, _construct_key(key, separator, index))
         # Anything left take as is
-        else:
+        elif filter_func(key):
             flattened_dict[key] = object_
 
     _flatten(nested_dict, None)
@@ -97,40 +114,6 @@ def flatten_keys(nested_dict, separator="_"):
         else:
             return {key}
     return _keys(nested_dict, None)
-
-
-def flatten_filter(nested_dict, separator="_", keys_to_ignore=None,
-                   keys_to_keep=None, filter_func=None):
-    """
-    """
-    n_kws = count_not_none(keys_to_ignore, keys_to_keep, filter_func)
-    assert n_kws <= 1, "Arguments `keys_to_ignore`, `keys_to_keep`, or " \
-                       "`filter_func` are mutually exclusive"
-
-    flattened_dict = dict()
-    if keys_to_ignore is not None:
-        assert isinstance(keys_to_ignore, set)
-        filter_func = lambda x: False if x in keys_to_ignore else True
-    elif keys_to_keep is not None:
-        assert isinstance(keys_to_keep, set)
-        filter_func = lambda x: True if x in keys_to_keep else False
-
-    def _flatten(object_, key):
-        if not object_ and filter_func(key):
-            flattened_dict[key] = object_
-        elif isinstance(object_, dict):
-            for object_key in object_:
-                _flatten(object_[object_key], _construct_key(key,
-                                                             separator,
-                                                             object_key))
-        elif isinstance(object_, list) or isinstance(object_, set):
-            for index, item in enumerate(object_):
-                _flatten(item, _construct_key(key, separator, index))
-        elif filter_func(key):
-            flattened_dict[key] = object_
-
-    _flatten(nested_dict, None)
-    return flattened_dict
 
 
 flatten_json = flatten
