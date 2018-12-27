@@ -269,20 +269,20 @@ class UnitTests(unittest.TestCase):
         actual = unflatten_list(dic_flatten)
         self.assertEqual(actual, dic)
 
-    # def test_flatten_ignore_keys(self):
-    #     """Ignore a set of root keys for processing"""
-    #     dic = {
-    #         'a': {'a': [1, 2, 3]},
-    #         'b': {'b': 'foo', 'c': 'bar'},
-    #         'c': {'c': [{'foo': 5, 'bar': 6, 'baz': [1, 2, 3]}]}
-    #     }
-    #     expected = {
-    #         'a_a_0': 1,
-    #         'a_a_1': 2,
-    #         'a_a_2': 3
-    #     }
-    #     actual = flatten(dic, root_keys_to_ignore={'b', 'c'})
-    #     self.assertEqual(actual, expected)
+    def test_flatten_ignore_keys(self):
+        """Ignore a set of root keys for processing"""
+        dic = {
+            'a': {'a': [1, 2, 3]},
+            'b': {'b': 'foo', 'c': 'bar'},
+            'c': {'c': [{'foo': 5, 'bar': 6, 'baz': [1, 2, 3]}]}
+        }
+        expected = {
+            'a_a_0': 1,
+            'a_a_1': 2,
+            'a_a_2': 3
+        }
+        actual = flatten(dic, root_keys_to_ignore={'b', 'c'})
+        self.assertEqual(actual, expected)
 
     def test_flatten_filter_ignore_keys(self):
         dic = {
