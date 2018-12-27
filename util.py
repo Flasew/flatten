@@ -7,3 +7,10 @@ def check_if_numbers_are_consecutive(list_):
     """
     return all((True if second - first == 1 else False
                 for first, second in zip(list_[:-1], list_[1:])))
+
+
+def count_not_none(*args):
+    """
+    Returns the number of arguments that are not None
+    """
+    return sum(arg is not None for arg in args)

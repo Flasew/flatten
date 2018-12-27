@@ -10,7 +10,7 @@ try:
 except ImportError:
     from collections import Iterable
 
-from util import check_if_numbers_are_consecutive
+from util import check_if_numbers_are_consecutive, count_not_none
 import six
 
 
@@ -81,20 +81,56 @@ def flatten(nested_dict, separator="_", root_keys_to_ignore=set()):
 
 
 def flatten_keys(nested_dict, separator="_"):
+    """
+    """
     def _keys(object_, key):
         if not object_:
             return {key}
         elif isinstance(object_, dict):
             return set(chain(
                 *[_keys(object_[o_key], _construct_key(key, separator, o_key))
-                for o_key in object_]))
+                  for o_key in object_]))
         elif isinstance(object_, list) or isinstance(object_, set):
             return set(chain(
                 *[_keys(item, _construct_key(key, separator, index))
-                for index, item in enumerate(object_)]))
+                  for index, item in enumerate(object_)]))
         else:
             return {key}
     return _keys(nested_dict, None)
+
+
+def flatten_filter(nested_dict, separator="_", keys_to_ignore=None,
+                   keys_to_keep=None, filter_func=None):
+    """
+    """
+    n_kws = count_not_none(keys_to_ignore, keys_to_keep, filter_func)
+    assert n_kws <= 1, "Arguments `keys_to_ignore`, `keys_to_keep`, or " \
+                       "`filter_func` are mutually exclusive"
+
+    flattened_dict = dict()
+    if keys_to_ignore is not None:
+        assert isinstance(keys_to_ignore, set)
+        filter_func = lambda x: False if x in keys_to_ignore else True
+    elif keys_to_keep is not None:
+        assert isinstance(keys_to_keep, set)
+        filter_func = lambda x: True if x in keys_to_keep else False
+
+    def _flatten(object_, key):
+        if not object_ and filter_func(key):
+            flattened_dict[key] = object_
+        elif isinstance(object_, dict):
+            for object_key in object_:
+                _flatten(object_[object_key], _construct_key(key,
+                                                             separator,
+                                                             object_key))
+        elif isinstance(object_, list) or isinstance(object_, set):
+            for index, item in enumerate(object_):
+                _flatten(item, _construct_key(key, separator, index))
+        elif filter_func(key):
+            flattened_dict[key] = object_
+
+    _flatten(nested_dict, None)
+    return flattened_dict
 
 
 flatten_json = flatten

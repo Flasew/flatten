@@ -12,7 +12,8 @@ except ImportError:
     # python3
     from io import StringIO
 
-from flatten_json import flatten, unflatten, unflatten_list, cli, flatten_keys
+from flatten_json import flatten, unflatten, unflatten_list, cli, \
+    flatten_keys, flatten_filter
 from util import check_if_numbers_are_consecutive
 
 
@@ -54,7 +55,9 @@ class UnitTests(unittest.TestCase):
         expected = {'a': '1', 'b': '2', 'c_c1': '3', 'c_c2': '4'}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
-        assertCountEqual(self, flatten_keys(dic), set(actual.keys()))
+        expected_keys = {'a', 'b', 'c_c1', 'c_c2'}
+        actual_keys = flatten_keys(dic)
+        assertCountEqual(self, actual_keys, expected_keys)
 
     def test_one_flatten_utf8(self):
         dic = {'a': '1',
@@ -64,7 +67,9 @@ class UnitTests(unittest.TestCase):
         expected = {'a': '1', u'ñ': u'áéö', 'c_c1': '3', 'c_c2': '4'}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
-        assertCountEqual(self, flatten_keys(dic), set(actual.keys()))
+        expected_keys = {'a', u'ñ', 'c_c1', 'c_c2'}
+        actual_keys = flatten_keys(dic)
+        assertCountEqual(self, actual_keys, expected_keys)
 
     def test_one_flatten_utf8_dif(self):
         a = {u'eñe': 1}
@@ -72,7 +77,9 @@ class UnitTests(unittest.TestCase):
         expected = {u'info_{}'.format(u'eñe'): 1}
         actual = flatten(info)
         self.assertEqual(actual, expected)
-        assertCountEqual(self, flatten_keys(info), set(actual.keys()))
+        expected_keys = {u'info_{}'.format(u'eñe')}
+        actual_keys = flatten_keys(info)
+        assertCountEqual(self, actual_keys, expected_keys)
 
     def test_custom_separator(self):
         dic = {'a': '1',
@@ -82,7 +89,9 @@ class UnitTests(unittest.TestCase):
         expected = {'a': '1', 'b': '2', 'c*c1': '3', 'c*c2': '4'}
         actual = flatten(dic, '*')
         self.assertEqual(actual, expected)
-        assertCountEqual(self, flatten_keys(dic, '*'), set(actual.keys()))
+        expected_keys = {'a', 'b', 'c*c1', 'c*c2'}
+        actual_keys = flatten_keys(dic, '*')
+        assertCountEqual(self, actual_keys, expected_keys)
 
     def test_list(self):
         dic = {
@@ -92,7 +101,9 @@ class UnitTests(unittest.TestCase):
         expected = {'a': 1, 'b_0_c_0': 2, 'b_0_c_1': 3}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
-        assertCountEqual(self, flatten_keys(dic), set(actual.keys()))
+        expected_keys = {'a', 'b_0_c_0', 'b_0_c_1'}
+        actual_keys = flatten_keys(dic)
+        assertCountEqual(self, actual_keys, expected_keys)
 
     def test_list_and_dict(self):
         dic = {
@@ -104,7 +115,10 @@ class UnitTests(unittest.TestCase):
                     'c_0_e_0_f': 1, 'c_0_e_0_g': 2}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
-        assertCountEqual(self, flatten_keys(dic), set(actual.keys()))
+        expected_keys = {'a', 'b', 'c_0_d_0', 'c_0_d_1', 'c_0_d_2',
+                         'c_0_e_0_f', 'c_0_e_0_g'}
+        actual_keys = flatten_keys(dic)
+        assertCountEqual(self, actual_keys, expected_keys)
 
     def test_empty_list_and_dict(self):
         dic = {
@@ -119,7 +133,10 @@ class UnitTests(unittest.TestCase):
                     'e_0_g_0_j': '', 'e_0_g_0_k': None}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
-        assertCountEqual(self, flatten_keys(dic), set(actual.keys()))
+        expected_keys = {'a', 'b', 'c', 'd', 'e_0_f', 'e_0_g_0_h', 'e_0_g_0_i',
+                         'e_0_g_0_j', 'e_0_g_0_k'}
+        actual_keys = flatten_keys(dic)
+        assertCountEqual(self, actual_keys, expected_keys)
 
     def test_blog_example(self):
         dic = {
@@ -132,7 +149,10 @@ class UnitTests(unittest.TestCase):
                     'c_0_e_0_g': 2}
         actual = flatten(dic)
         self.assertEqual(actual, expected)
-        assertCountEqual(self, flatten_keys(dic), set(actual.keys()))
+        expected_keys = {'a', 'b', 'c_0_d_0', 'c_0_d_1', 'c_0_d_2',
+                         'c_0_e_0_f', 'c_0_e_0_g'}
+        actual_keys = flatten_keys(dic)
+        assertCountEqual(self, actual_keys, expected_keys)
 
     def test_unflatten_no_list(self):
         dic = {
@@ -262,6 +282,55 @@ class UnitTests(unittest.TestCase):
             'a_a_2': 3
         }
         actual = flatten(dic, root_keys_to_ignore={'b', 'c'})
+        self.assertEqual(actual, expected)
+
+    def test_flatten_filter_ignore_keys(self):
+        dic = {
+            'a': {'a': [1, 2, 3]},
+            'b': {'b': 'foo', 'c': 'bar'},
+            'c': {'c': [{'foo': 5, 'bar': 6, 'baz': [1, 2, 3]}]}
+        }
+        expected = {
+            'a_a_0': 1,
+            'a_a_1': 2,
+            'a_a_2': 3,
+            'b_b': 'foo',
+            'b_c': 'bar',
+            'c_c_0_foo': 5,
+            'c_c_0_bar': 6
+        }
+        keys_to_ignore = {'c_c_0_baz_0', 'c_c_0_baz_1', 'c_c_0_baz_2'}
+        actual = flatten_filter(dic, keys_to_ignore=keys_to_ignore)
+        self.assertEqual(actual, expected)
+
+    def test_flatten_filter_keep_keys(self):
+        dic = {
+            'a': {'a': [1, 2, 3]},
+            'b': {'b': 'foo', 'c': 'bar'},
+            'c': {'c': [{'foo': 5, 'bar': 6, 'baz': [1, 2, 3]}]}
+        }
+        expected = {
+            'c_c_0_baz_0': 1,
+            'c_c_0_baz_1': 2,
+            'c_c_0_baz_2': 3
+        }
+        keys_to_keep = {'c_c_0_baz_0', 'c_c_0_baz_1', 'c_c_0_baz_2'}
+        actual = flatten_filter(dic, keys_to_keep=keys_to_keep)
+        self.assertEqual(actual, expected)
+
+    def test_flatten_filter_func(self):
+        dic = {
+            'a': {'a': [1, 2, 3]},
+            'b': {'b': 'foo', 'c': 'bar'},
+            'c': {'c': [{'foo': 5, 'bar': 6, 'baz': [1, 2, 3]}]}
+        }
+        expected = {
+            'c_c_0_baz_0': 1,
+            'c_c_0_baz_1': 2,
+            'c_c_0_baz_2': 3
+        }
+        keys_to_keep = {'c_c_0_baz_0', 'c_c_0_baz_1', 'c_c_0_baz_2'}
+        actual = flatten_filter(dic, keys_to_keep=keys_to_keep)
         self.assertEqual(actual, expected)
 
     def test_command_line(self):
